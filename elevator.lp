@@ -3,12 +3,18 @@
 % beschäftigt 
 
 agent(elevator(1)).
+agent(elevator(2)).
 floor(1).
 floor(2).
 floor(3).
-init(at(elevator(1),2)).
-init(request(deliver(1),3)).
-init(request(call(up),1)).
+floor(4).
+floor(5).
+init(at(elevator(1),1)).
+init(at(elevator(2),2)).
+init(request(deliver(2),3)).
+init(request(call(up),3)).
+init(request(call(down),5)).
+init(request(call(down),4)).
 
 #include <incmode>. % built-in incremental mode of clingo
 
@@ -33,8 +39,6 @@ go_to(GF, GF, GF, 0, E) :- init(request(_,GF)), agent(elevator(E)).
 go_to(CF, CF, CF, -1, E) :- floor(CF), agent(elevator(E)).
 
 #program step(t). % actions, effects, and minimization go below
-
-test(t) :- agent(elevator(1)).
 
 % DE = designated elevator task; E for specific elevator delivery, 0 for any elevator to pick up, -1 for stopping
 
@@ -62,9 +66,11 @@ option(go_to(CF,NF,GF,DE',E),t),
 % elevator serves 
 do(elevator(E),serve,t) :- path(go_to(GF, GF, GF, 0, E),t).
 do(elevator(E),serve,t) :- path(go_to(GF, GF, GF, E, E),t).
-served(F) :- do(elevator(E),serve,t), holds(at(elevator(E),F),t).
-%service(F) :- path(go_to(_,_,F,_,_),t).
-dropped(F,E) :- do(elevator(E),serve,t), holds(at(elevator(E),F),t),holds(request(deliver(E),F),t-1). 
+served(F,t) :- do(elevator(E),serve,t), holds(at(elevator(E),F),t).
+served(F,t) :- served(F,t-1).
+service(F) :- path(go_to(_,_,F,_,_),t).
+dropped(F,E,t) :- do(elevator(E),serve,t), holds(at(elevator(E),F),t), holds(request(deliver(E),F),t-1). 
+dropped(F,E,t) :- dropped(F,E,t-1).
 
 % elevator moves
 do(elevator(E),move(1),t) :- path(go_to(CF, NF, _, DE, E),t), DE != -1, NF-CF = 1.
@@ -74,8 +80,8 @@ do(elevator(E),move(-1),t) :- path(go_to(CF, NF, _, DE, E),t), DE != -1, NF-CF =
 holds(at(elevator(E),NF),t) :- path(go_to(_, NF, _, _, E),t).
 
 % keep unserved pickups and deliveries
-holds(request(call(C),F),t) :- holds(request(call(C),F),t-1), not served(F).
-holds(request(deliver(E),F),t) :- holds(request(deliver(E),F),t-1), not dropped(F,E).
+holds(request(call(C),F),t) :- holds(request(call(C),F),t-1), not served(F,t).
+holds(request(deliver(E),F),t) :- holds(request(deliver(E),F),t-1), not dropped(F,E,t).
 
 
 #minimize {1 : do(_,_,_)}.
