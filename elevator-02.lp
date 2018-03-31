@@ -86,8 +86,3 @@ holds(request(deliver(E),F),t) :- holds(request(deliver(E),F),t-1), not dropped(
 
 #show holds/2.
 #show do/3.
-%#show option/2.
-%#show path/2.
-%#show service/1.
-%#show dropped/2.
-%#show test/1.
